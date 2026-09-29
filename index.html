@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#5b5bd6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="My Planner">
+<link rel="manifest" href="manifest.json">
+<title>My Planner</title>
+<style>
+:root{--bg:#f5f6fb;--card:#fff;--ink:#182033;--muted:#70798a;--line:#e5e8ef;--accent:#5b5bd6;--soft:#ededff;--shadow:0 8px 28px #1b234014}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
+header{position:sticky;top:0;z-index:20;background:#fffffff2;backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:10px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.brand{font-weight:850;font-size:20px;margin-right:auto}.nav button,.btn{border:0;border-radius:10px;padding:9px 12px;background:#f0f2f6;color:var(--ink)}.nav button.active,.primary{background:var(--accent);color:white}.primary{border:0}.wrap{max-width:1500px;margin:auto;padding:14px}.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px}.toolbar h2{font-size:20px;margin:0}.spacer{flex:1}.tip{font-size:12px;background:#fff8dc;border:1px solid #eedb8b;padding:9px 11px;border-radius:10px;margin-bottom:12px}
+.week{display:grid;grid-template-columns:54px repeat(7,minmax(118px,1fr));background:#fff;border:1px solid var(--line);border-radius:14px;overflow:auto;box-shadow:var(--shadow)}.dayhead{height:55px;position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);padding:8px;text-align:center;font-weight:800}.dayhead small{display:block;color:var(--muted);font-weight:500}.timecol{background:#fbfcfe}.time{height:48px;border-bottom:1px solid var(--line);padding:4px 4px 0 0;text-align:right;color:var(--muted);font-size:10px}.daycol{height:1152px;position:relative;border-left:1px solid var(--line);background:repeating-linear-gradient(to bottom,transparent 0,transparent 47px,var(--line) 48px);touch-action:none}.daycol.drop{background-color:#f0efff}
+.event{position:absolute;left:4px;right:4px;border-radius:9px;padding:6px 7px;color:#fff;overflow:hidden;box-shadow:0 3px 9px #0002;z-index:2;touch-action:none;user-select:none}.event strong{display:block;font-size:12px}.event small{font-size:10px;opacity:.9}.event.movable{cursor:grab}.event.fixed{opacity:.92}.study{background:#5b5bd6}.class{background:#1976a8}.group{background:#a15c2c}.personal{background:#7a4aa8}.life{background:#238b63}.exam{background:#c5485e}.meal{background:#d68b27}.handle{position:absolute;left:0;right:0;bottom:0;height:8px;cursor:ns-resize}
+.month{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:auto;box-shadow:var(--shadow)}.monthgrid{display:grid;grid-template-columns:repeat(7,minmax(105px,1fr));min-width:735px}.mhead{text-align:center;padding:10px;font-weight:800;border-bottom:1px solid var(--line);background:#fafbfc}.mday{min-height:125px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px}.mday.muted{background:#fafafa;color:#aab0bb}.mnum{font-weight:800;font-size:12px}.mevent{font-size:10px;color:#fff;border-radius:5px;padding:3px 5px;margin:3px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.side{position:fixed;z-index:50;right:0;top:0;bottom:0;width:min(400px,100vw);background:#fff;box-shadow:-15px 0 35px #0002;padding:18px;overflow:auto;transform:translateX(102%);transition:.2s}.side.open{transform:none}.field{margin:11px 0}.field label{display:block;color:var(--muted);font-size:12px;font-weight:750;margin-bottom:5px}.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px;background:#fff}.row{display:flex;gap:8px}.row>*{flex:1}.actions{display:flex;gap:8px}.danger{background:#fff0f2;color:#c43f59}.small{font-size:12px;color:var(--muted)}.empty{padding:35px;text-align:center;color:var(--muted)}
+@media(max-width:800px){header{padding:9px}.brand{width:100%;margin:0}.wrap{padding:8px}.week{grid-template-columns:48px repeat(7,126px)}.side{width:100%}}
+</style>
+</head>
+<body>
+<header>
+<div class="brand">📅 My Planner</div>
+<div class="nav"><button id="wb" class="active" onclick="setView('week')">Week</button><button id="mb" onclick="setView('month')">Month</button></div>
+<button class="btn" onclick="today()">Today</button><button class="btn" onclick="notify()">🔔 Alerts</button><button class="btn primary" onclick="openAdd()">＋ Add</button>
+</header>
+<main class="wrap">
+<div class="tip">📱 <b>Phone:</b> press and hold a movable block, then drag it to another day/time. Fixed classes cannot move. Tap a block to edit it.</div>
+<div class="toolbar"><button class="btn" onclick="move(-1)">←</button><h2 id="titlebar"></h2><button class="btn" onclick="move(1)">→</button><div class="spacer"></div></div>
+<section id="content"></section>
+</main>
+<aside id="side" class="side">
+<h2 id="et">Add block</h2>
+<form onsubmit="saveEvent(event)">
+<input type="hidden" id="eid">
+<div class="field"><label>Title</label><input id="name" required placeholder="e.g. Laundry / Midterm / Going out"></div>
+<div class="row"><div class="field"><label>Date</label><input id="date" type="date" required></div><div class="field"><label>Type</label><select id="kind"><option value="study">Study</option><option value="class">Class</option><option value="group">Group project</option><option value="personal">Personal project</option><option value="life">Life / chore</option><option value="exam">Exam / deadline</option><option value="meal">Meal prep</option></select></div></div>
+<div class="row"><div class="field"><label>Start</label><input id="start" type="time" required></div><div class="field"><label>End</label><input id="end" type="time" required></div></div>
+<div class="field"><label>Alert</label><select id="alert"><option value="0">No alert</option><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 hour</option><option value="1440">1 day</option></select></div>
+<div class="field"><label><input id="repeat" type="checkbox"> Repeat weekly</label></div>
+<div class="field"><label>Notes</label><textarea id="notes" rows="3"></textarea></div>
+<div class="actions"><button class="btn primary" type="submit">Save</button><button class="btn" type="button" onclick="closeSide()">Cancel</button><button class="btn danger" id="del" type="button" onclick="delEvent()">Delete</button></div>
+</form>
+<hr><div class="small">Use this for laundry, cleaning, going out, gym, appointments, quizzes, midterms, finals and deadlines. Your changes are saved on this device.</div>
+</aside>
+<script>
+const KEY='planner-pwa-v2';let view='week', anchor=new Date();anchor.setHours(0,0,0,0),drag=null;
+const D=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], pad=n=>String(n).padStart(2,'0'), iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()), pd=s=>{let [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)}, mins=s=>{let [h,m]=s.split(':').map(Number);return h*60+m}, mon=d=>{let x=new Date(d),n=(x.getDay()+6)%7;x.setDate(x.getDate()-n);x.setHours(0,0,0,0);return x};
+function seed(){let m=mon(new Date()),a=[],add=(title,off,start,end,type,notes='',alert=0,fixed=false)=>a.push({id:crypto.randomUUID(),title,date:iso(new Date(m.getFullYear(),m.getMonth(),m.getDate()+off)),start,end,type,notes,alert,repeat:false,fixed});
+add('CC15',1,'10:30','12:30','class','Class',10,true);add('CC7',2,'10:30','12:30','class','Class',10,true);add('SC1001 Lab + Tutorial',2,'14:30','16:30','class','Lab + tutorial',10,true);add('Macro',4,'11:30','13:30','class','Weekly quiz',15,true);add('Macro Lecture',4,'14:30','15:30','class','Lecture',10,true);add('Calculus Tutorial',4,'15:30','17:30','class','Tutorial',10,true);
+add('CC15 + CC7 homework',0,'10:00','12:00','study','Monday homework');add('SC1001 preparation',0,'13:00','15:00','study');add('Meal prep',0,'16:00','17:30','meal');add('Exam preparation',0,'18:30','20:30','study','Mid-sem/final');
+add('Mid-sem / final prep',1,'13:30','15:30','study');add('Group project',1,'16:30','18:30','group');add('Light review',2,'19:00','20:00','study');add('Macro quiz preparation',3,'10:00','14:00','study','4-hour quiz preparation');add('Macro problem set',3,'15:30','17:00','study');add('Meal prep',3,'18:00','19:30','meal');add('Light review',4,'09:30','10:30','study');add('Mid-sem / final prep',5,'10:00','12:00','study');add('Personal project',5,'12:30','14:00','personal');add('Group project',5,'15:00','17:00','group');add('Mid-sem / final prep',6,'10:30','12:30','study');add('Mid-sem / final prep',6,'13:30','15:30','study');add('Personal project',6,'16:30','18:00','personal');return {events:a}}
+let data=JSON.parse(localStorage.getItem(KEY)||'null')||seed();localStorage.setItem(KEY,JSON.stringify(data));
+function persist(){localStorage.setItem(KEY,JSON.stringify(data))}
+function setView(v){view=v;wb.classList.toggle('active',v==='week');mb.classList.toggle('active',v==='month');render()}
+function move(n){if(view==='week')anchor.setDate(anchor.getDate()+7*n);else anchor.setMonth(anchor.getMonth()+n);render()}
+function today(){anchor=new Date();anchor.setHours(0,0,0,0);render()}
+function label(){if(view==='month')return anchor.toLocaleDateString(undefined,{month:'long',year:'numeric'});let a=mon(anchor),b=new Date(a);b.setDate(a.getDate()+6);return a.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' – '+b.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}
+function render(){titlebar.textContent=label();view==='week'?week():month()}
+function esc(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+function week(){let a=mon(anchor),s='<div class="week"><div class="timecol"><div class="dayhead">Time</div>';for(let h=7;h<=30;h++){let q=h%24;s+=`<div class="time">${q===0?'12':q>12?q-12:q}:00 ${h>=12&&h<24?'PM':h<12?'AM':''}</div>`}s+='</div>';for(let i=0;i<7;i++){let d=new Date(a);d.setDate(a.getDate()+i);let ds=iso(d);s+=`<div><div class="dayhead">${D[i]}<small>${d.getDate()} ${d.toLocaleDateString(undefined,{month:'short'})}</small></div><div class="daycol" data-date="${ds}" onpointerup="dropAt(event)" onpointermove="dragMove(event)" onpointerleave="leaveDrop(event)">`;data.events.filter(e=>e.date===ds).forEach(e=>{let top=(mins(e.start)-420)*.8,h=Math.max(26,(mins(e.end)-mins(e.start))*.8);s+=`<div class="event ${e.type} ${e.fixed?'fixed':'movable'}" style="top:${top}px;height:${h}px" data-id="${e.id}" onpointerdown="pointerDown(event,'${e.id}')" onclick="tapEvent(event,'${e.id}')"><strong>${esc(e.title)}</strong><small>${e.start}–${e.end}${e.alert?' · 🔔':''}</small>${!e.fixed?'<div class="handle"></div>':''}</div>`});s+='</div></div>'}s+='</div>';content.innerHTML=s}
+function month(){let f=new Date(anchor.getFullYear(),anchor.getMonth(),1),a=mon(f),s='<div class="month"><div class="monthgrid">'+D.map(x=>`<div class="mhead">${x}</div>`).join('');for(let i=0;i<42;i++){let d=new Date(a);d.setDate(a.getDate()+i);s+=`<div class="mday ${d.getMonth()!=anchor.getMonth()?'muted':''}" onclick="openAdd('${iso(d)}')"><div class="mnum">${d.getDate()}</div>`;data.events.filter(e=>e.date===iso(d)).slice(0,7).forEach(e=>s+=`<div class="mevent ${e.type}" onclick="event.stopPropagation();edit('${e.id}')">${esc(e.title)}</div>`);s+='</div>'}content.innerHTML=s+'</div></div>'}
+function openAdd(ds){formReset();date.value=ds||iso(anchor);side.classList.add('open')}
+function formReset(){eid.value='';name.value='';kind.value='study';start.value='10:00';end.value='11:00';alert.value='0';repeat.checked=false;notes.value='';et.textContent='Add block';del.style.display='none'}
+function edit(id){let e=data.events.find(x=>x.id===id);if(!e)return;eid.value=e.id;name.value=e.title;date.value=e.date;kind.value=e.type;start.value=e.start;end.value=e.end;alert.value=e.alert;repeat.checked=e.repeat;notes.value=e.notes||'';et.textContent='Edit block';del.style.display=e.fixed?'none':'block';side.classList.add('open')}
+function tapEvent(ev,id){if(drag&&drag.moved){ev.preventDefault();return}edit(id)}
+function closeSide(){side.classList.remove('open')}
+function saveEvent(e){e.preventDefault();let o={id:eid.value||crypto.randomUUID(),title:name.value,date:date.value,start:start.value,end:end.value,type:kind.value,alert:+alert.value,repeat:repeat.checked,notes:notes.value,fixed:false};if(eid.value){let old=data.events.find(x=>x.id===eid.value);Object.assign(old,o,{fixed:old.fixed})}else data.events.push(o);persist();closeSide();render()}
+function delEvent(){data.events=data.events.filter(e=>e.id!==eid.value);persist();closeSide();render()}
+function pointerDown(ev,id){let e=data.events.find(x=>x.id===id);if(!e||e.fixed)return;ev.preventDefault();drag={id,sy:ev.clientY,sx:ev.clientX,moved:false,origDate:e.date,origStart:e.start,dur:mins(e.end)-mins(e.start)};ev.currentTarget.setPointerCapture?.(ev.pointerId)}
+function dragMove(ev){if(!drag)return;drag.moved=true;ev.currentTarget.classList.add('drop')}
+function leaveDrop(ev){ev.currentTarget.classList.remove('drop')}
+function dropAt(ev){if(!drag)return;let col=ev.currentTarget;col.classList.remove('drop');let e=data.events.find(x=>x.id===drag.id);if(!e){drag=null;return}let r=col.getBoundingClientRect(),y=Math.max(0,Math.min(r.height,ev.clientY-r.top));let m=Math.round((420+y/.8)/15)*15;m=Math.max(420,Math.min(1410,m));e.date=col.dataset.date;e.start=pad(Math.floor(m/60)%24)+':'+pad(m%60);let end=m+drag.dur;e.end=pad(Math.floor(end/60)%24)+':'+pad(end%60);persist();render();drag=null}
+function notify(){if(!('Notification'in window)){alert('Notifications are not supported here.');return}Notification.requestPermission().then(p=>alert(p==='granted'?'Alerts enabled.':'Please allow notifications in your browser.'))}
+setInterval(()=>{let n=new Date(),ds=iso(n),cm=n.getHours()*60+n.getMinutes();data.events.forEach(e=>{if(e.date!==ds||!e.alert)return;let t=mins(e.start)-e.alert,key='seen-'+e.id+'-'+ds+'-'+t;if(cm===t&&!localStorage.getItem(key)){localStorage.setItem(key,'1');if(Notification.permission==='granted')new Notification('Upcoming: '+e.title,{body:'Starts at '+e.start});}},1000);},30000);
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+render();
+</script>
+</body></html>
